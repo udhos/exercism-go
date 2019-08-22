@@ -3,6 +3,8 @@ package ledger
 
 import (
 	"fmt"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 	"math"
 	"sort"
 	"strconv"
@@ -47,7 +49,9 @@ func FormatLedger(currency, locale string, entries []Entry) (string, error) {
 	copy(input, entries)
 
 	sort.Slice(input, func(i, j int) bool {
-		return entries[i].Date < entries[j].Date
+		return entries[i].Date < entries[j].Date ||
+			(entries[i].Date == entries[j].Date && entries[i].Description < entries[j].Description) ||
+			(entries[i].Date == entries[j].Date && entries[i].Description == entries[j].Description && entries[i].Change < entries[j].Change)
 	})
 
 	var result string
@@ -108,7 +112,8 @@ func formatChange(change int, locale, currency string) (string, error) {
 
 	switch locale {
 	case "en-US":
-		str := c + fmt.Sprintf("%.2f", math.Abs(float64(change)/100))
+		p := message.NewPrinter(language.English)
+		str := c + p.Sprintf("%.2f", math.Abs(float64(change)/100))
 		if change < 0 {
 			str = "(" + str + ")"
 		} else {
@@ -121,5 +126,10 @@ func formatChange(change int, locale, currency string) (string, error) {
 }
 
 func format(date, desc, cents string, changeWidth int) string {
+
+	if len(desc) > 25 {
+		desc = desc[:22] + "..."
+	}
+
 	return fmt.Sprintf("%-10s | %-25s | %*s\n", date, desc, changeWidth, cents)
 }
