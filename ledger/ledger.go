@@ -26,10 +26,12 @@ type header struct {
 
 var tabHeader = map[string]header{
 	"en-US": {"Date", "Description", "Change"},
+	"nl-NL": {"Datum", "Omschrijving", "Verandering"},
 }
 
 var tabCurrency = map[string]string{
 	"USD": "$",
+	"EUR": "€",
 }
 
 // FormatLedger formats ledger records.
@@ -44,10 +46,11 @@ func FormatLedger(currency, locale string, entries []Entry) (string, error) {
 		return "", fmt.Errorf("bad locale: %s", locale)
 	}
 
-	// clone input
+	// clone input (test cases dont allow changing input)
 	input := make([]Entry, len(entries))
 	copy(input, entries)
 
+	// sort input
 	sort.Slice(input, func(i, j int) bool {
 		return entries[i].Date < entries[j].Date ||
 			(entries[i].Date == entries[j].Date && entries[i].Description < entries[j].Description) ||
@@ -56,6 +59,7 @@ func FormatLedger(currency, locale string, entries []Entry) (string, error) {
 
 	var result string
 
+	// scan input
 	for _, e := range input {
 		strDate, errDate := formatDate(e.Date, locale)
 		if errDate != nil {
@@ -98,6 +102,8 @@ func formatDate(date, locale string) (string, error) {
 	switch locale {
 	case "en-US":
 		return fmt.Sprintf("%02d/%02d/%d", m, d, y), nil
+	case "nl-NL":
+		return fmt.Sprintf("%02d-%02d-%d", d, m, y), nil
 	}
 
 	return "", fmt.Errorf("bad locale: %s", locale)
@@ -113,9 +119,18 @@ func formatChange(change int, locale, currency string) (string, error) {
 	switch locale {
 	case "en-US":
 		p := message.NewPrinter(language.English)
-		str := c + p.Sprintf("%.2f", math.Abs(float64(change)/100))
+		str := p.Sprintf("%s%.2f", c, math.Abs(float64(change)/100))
 		if change < 0 {
 			str = "(" + str + ")"
+		} else {
+			str += " "
+		}
+		return str, nil
+	case "nl-NL":
+		p := message.NewPrinter(language.Dutch)
+		str := p.Sprintf("%s %.2f", c, math.Abs(float64(change)/100))
+		if change < 0 {
+			str += "-"
 		} else {
 			str += " "
 		}
