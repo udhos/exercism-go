@@ -3,7 +3,10 @@ package ledger
 
 import (
 	"fmt"
+	"math"
+	"sort"
 	"strconv"
+	"strings"
 )
 
 // Entry holds a ledger record.
@@ -14,8 +17,8 @@ type Entry struct {
 }
 
 type header struct {
-	date string
-	desc string
+	date  string
+	desc  string
 	cents string
 }
 
@@ -23,19 +26,33 @@ var tabHeader = map[string]header{
 	"en-US": {"Date", "Description", "Change"},
 }
 
+var tabCurrency = map[string]string{
+	"USD": "$",
+}
+
 // FormatLedger formats ledger records.
 func FormatLedger(currency, locale string, entries []Entry) (string, error) {
+
+	if _, found := tabCurrency[currency]; !found {
+		return "", fmt.Errorf("bad currency: %s", currency) // make picky test case happy
+	}
 
 	h, found := tabHeader[locale]
 	if !found {
 		return "", fmt.Errorf("bad locale: %s", locale)
 	}
 
+	// clone input
+	input := make([]Entry, len(entries))
+	copy(input, entries)
+
+	sort.Slice(input, func(i, j int) bool {
+		return entries[i].Date < entries[j].Date
+	})
+
 	var result string
 
-	result += format(h.date, h.desc, h.cents, len(h.cents))
-
-	for _, e := range entries {
+	for _, e := range input {
 		strDate, errDate := formatDate(e.Date, locale)
 		if errDate != nil {
 			return "", errDate
@@ -47,17 +64,62 @@ func FormatLedger(currency, locale string, entries []Entry) (string, error) {
 		result += format(strDate, e.Description, strChange, 13)
 	}
 
-	return result, nil
+	return format(h.date, h.desc, h.cents, len(h.cents)) + result, nil
 }
 
 func formatDate(date, locale string) (string, error) {
-	return date, nil
+	s := strings.Split(date, "-")
+	if len(s) != 3 {
+		return "", fmt.Errorf("bad date: %s", date)
+	}
+	y, errY := strconv.Atoi(s[0])
+	if errY != nil {
+		return "", fmt.Errorf("bad year: %s: %v", date, errY)
+	}
+	m, errM := strconv.Atoi(s[1])
+	if errM != nil {
+		return "", fmt.Errorf("bad month: %s: %v", date, errM)
+	}
+	if m < 1 || m > 12 {
+		return "", fmt.Errorf("bad month: %s: %d", date, m)
+	}
+	d, errD := strconv.Atoi(s[2])
+	if errD != nil {
+		return "", fmt.Errorf("bad day: %s: %v", date, errD)
+	}
+	if d < 1 || m > 31 {
+		return "", fmt.Errorf("bad day: %s: %d", date, d)
+	}
+
+	switch locale {
+	case "en-US":
+		return fmt.Sprintf("%02d/%02d/%d", m, d, y), nil
+	}
+
+	return "", fmt.Errorf("bad locale: %s", locale)
 }
 
 func formatChange(change int, locale, currency string) (string, error) {
-	return strconv.Itoa(change), nil
+
+	c, found := tabCurrency[currency]
+	if !found {
+		return "", fmt.Errorf("bad currency: %s", currency)
+	}
+
+	switch locale {
+	case "en-US":
+		str := c + fmt.Sprintf("%.2f", math.Abs(float64(change)/100))
+		if change < 0 {
+			str = "(" + str + ")"
+		} else {
+			str += " "
+		}
+		return str, nil
+	}
+
+	return "", fmt.Errorf("bad locale: %s", locale)
 }
 
 func format(date, desc, cents string, changeWidth int) string {
-	return fmt.Sprintf("%-10s | %-25s | %-*s\n", date, desc, changeWidth, cents)
+	return fmt.Sprintf("%-10s | %-25s | %*s\n", date, desc, changeWidth, cents)
 }
