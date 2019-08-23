@@ -1,5 +1,7 @@
 package towerofhanoi
 
+// This is an example implementation.
+
 // Solve returns list of moves for solving the Tower of Hanoi
 // puzzle. 'disks' is the amount of disks. 'from' is source
 // rod, 'aux' is the helper rod, 'to' is the destination rod.
