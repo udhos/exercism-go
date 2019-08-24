@@ -94,7 +94,7 @@ func apply(t *testing.T, disks int, b *board, moves []string) error {
 				last := len(b.a) - 1
 				top := b.a[last]
 				if disk > top {
-					return fmt.Errorf("invalid move disk=%d is greater than top=%d of rod A %d: [%s]", disk, top, i, m)
+					return fmt.Errorf("invalid move disk=%d is greater than top=%d of dst rod A %d: [%s]", disk, top, i, m)
 				}
 			}
 			b.a = append(b.a, disk)
@@ -103,7 +103,7 @@ func apply(t *testing.T, disks int, b *board, moves []string) error {
 				last := len(b.b) - 1
 				top := b.b[last]
 				if disk > top {
-					return fmt.Errorf("invalid move disk=%d is greater than top=%d of rod A %d: [%s]", disk, top, i, m)
+					return fmt.Errorf("invalid move disk=%d is greater than top=%d of dst rod B %d: [%s]", disk, top, i, m)
 				}
 			}
 			b.b = append(b.b, disk)
@@ -112,7 +112,7 @@ func apply(t *testing.T, disks int, b *board, moves []string) error {
 				last := len(b.c) - 1
 				top := b.c[last]
 				if disk > top {
-					return fmt.Errorf("invalid move disk=%d is greater than top=%d of rod A %d: [%s]", disk, top, i, m)
+					return fmt.Errorf("invalid move disk=%d is greater than top=%d of dst rod C %d: [%s]", disk, top, i, m)
 				}
 			}
 			b.c = append(b.c, disk)
